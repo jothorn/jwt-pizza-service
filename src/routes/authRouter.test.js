@@ -11,7 +11,7 @@ beforeAll(async () => {
     expectValidJwt(testUserAuthToken);
 });
 
-test('login', async () => {
+async function login() {
     const loginRes = await request(app).put('/api/auth').send(testUser);
     expect(loginRes.status).toBe(200);
     expectValidJwt(loginRes.body.token);
@@ -19,7 +19,17 @@ test('login', async () => {
     const expectedUser = { ...testUser, roles: [{ role: 'diner' }] };
     delete expectedUser.password;
     expect(loginRes.body.user).toMatchObject(expectedUser);
-});
+
+    return loginRes.body.token;
+}
+
+test('login', login);
+
+test('logout', async () => {
+    const authToken = await login();
+    const logoutRes = await request(app).delete('/api/auth').set('Authorization', `Bearer ${authToken}`).send();
+    expect(logoutRes.status).toBe(200);
+})
 
 function expectValidJwt(potentialJwt) {
     expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
