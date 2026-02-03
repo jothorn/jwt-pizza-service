@@ -1,36 +1,41 @@
-const request = require('supertest');
-const app = require('../service');
+const request = require("supertest");
+const app = require("../service");
 
-const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
+const testUser = { name: "pizza diner", email: "reg@test.com", password: "a" };
 let testUserAuthToken;
 
 beforeAll(async () => {
-    testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
-    const registerRes = await request(app).post('/api/auth').send(testUser);
-    testUserAuthToken = registerRes.body.token;
-    expectValidJwt(testUserAuthToken);
+  testUser.email = Math.random().toString(36).substring(2, 12) + "@test.com";
+  const registerRes = await request(app).post("/api/auth").send(testUser);
+  testUserAuthToken = registerRes.body.token;
+  expectValidJwt(testUserAuthToken);
 });
 
 async function login() {
-    const loginRes = await request(app).put('/api/auth').send(testUser);
-    expect(loginRes.status).toBe(200);
-    expectValidJwt(loginRes.body.token);
+  const loginRes = await request(app).put("/api/auth").send(testUser);
+  expect(loginRes.status).toBe(200);
+  expectValidJwt(loginRes.body.token);
 
-    const expectedUser = { ...testUser, roles: [{ role: 'diner' }] };
-    delete expectedUser.password;
-    expect(loginRes.body.user).toMatchObject(expectedUser);
+  const expectedUser = { ...testUser, roles: [{ role: "diner" }] };
+  delete expectedUser.password;
+  expect(loginRes.body.user).toMatchObject(expectedUser);
 
-    return loginRes.body.token;
+  return loginRes.body.token;
 }
 
-test('login', login);
+test("login", login);
 
-test('logout', async () => {
-    const authToken = await login();
-    const logoutRes = await request(app).delete('/api/auth').set('Authorization', `Bearer ${authToken}`).send();
-    expect(logoutRes.status).toBe(200);
-})
+test("logout", async () => {
+  const authToken = await login();
+  const logoutRes = await request(app)
+    .delete("/api/auth")
+    .set("Authorization", `Bearer ${authToken}`)
+    .send();
+  expect(logoutRes.status).toBe(200);
+});
 
 function expectValidJwt(potentialJwt) {
-    expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+  expect(potentialJwt).toMatch(
+    /^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/,
+  );
 }
