@@ -11,7 +11,7 @@ beforeAll(async () => {
   expectValidJwt(testUserAuthToken);
 });
 
-async function login() {
+test("login", async () => {
   const loginRes = await request(app).put("/api/auth").send(testUser);
   expect(loginRes.status).toBe(200);
   expectValidJwt(loginRes.body.token);
@@ -21,15 +21,12 @@ async function login() {
   expect(loginRes.body.user).toMatchObject(expectedUser);
 
   return loginRes.body.token;
-}
-
-test("login", login);
+});
 
 test("logout", async () => {
-  const authToken = await login();
   const logoutRes = await request(app)
     .delete("/api/auth")
-    .set("Authorization", `Bearer ${authToken}`)
+    .set("Authorization", `Bearer ${testUserAuthToken}`)
     .send();
   expect(logoutRes.status).toBe(200);
 });
