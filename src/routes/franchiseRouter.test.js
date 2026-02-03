@@ -56,3 +56,15 @@ test("list franchises", async () => {
     ]),
   );
 });
+
+test("list a user's franchises", async () => {
+  const expected = await createFranchise();
+  const res = await request(app)
+    .get(`/api/franchise/${testUser.id}`)
+    .set("Authorization", `Bearer ${testUserAuthToken}`);
+
+  expect(res.status).toBe(200);
+  expect(res.body).toEqual(
+    expect.arrayContaining([{ ...expected, stores: [] }]),
+  );
+});
