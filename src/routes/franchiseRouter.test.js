@@ -44,27 +44,29 @@ async function createFranchise() {
 test("create franchise", createFranchise);
 
 test("list franchises", async () => {
-  const expected = await createFranchise();
+  const franchise = await createFranchise();
   const res = await request(app).get(
-    `/api/franchise?page-0&limit=1&name=${expected.name}`,
+    `/api/franchise?page-0&limit=1&name=${franchise.name}`,
   );
 
   expect(res.status).toBe(200);
   expect(res.body.franchises).toEqual(
     expect.arrayContaining([
-      { id: expected.id, name: expected.name, stores: [] },
+      { id: franchise.id, name: franchise.name, stores: [] },
     ]),
   );
 });
 
 test("list a user's franchises", async () => {
-  const expected = await createFranchise();
+  const franchise = await createFranchise();
   const res = await request(app)
     .get(`/api/franchise/${testUser.id}`)
     .set("Authorization", `Bearer ${testUserAuthToken}`);
 
   expect(res.status).toBe(200);
   expect(res.body).toEqual(
-    expect.arrayContaining([{ ...expected, stores: [] }]),
+    expect.arrayContaining([{ ...franchise, stores: [] }]),
   );
 });
+
+test("delete a franchise", async () => {});
