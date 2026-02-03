@@ -69,4 +69,12 @@ test("list a user's franchises", async () => {
   );
 });
 
-test("delete a franchise", async () => {});
+test("delete a franchise", async () => {
+  const franchise = await createFranchise();
+  const res = await request(app)
+    .delete(`/api/franchise/${franchise.id}`)
+    .set("Authorization", `Bearer ${testUserAuthToken}`);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.message).toEqual("franchise deleted");
+});
