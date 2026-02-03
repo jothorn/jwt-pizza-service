@@ -79,14 +79,22 @@ test("delete a franchise", async () => {
   expect(res.body.message).toEqual("franchise deleted");
 });
 
-test("create a new franchise store", async () => {
+async function createStore() {
   const franchise = await createFranchise();
-  const expectedStore = { franchiseId: franchise.id, name: randomName() };
+  const name = randomName();
   const res = await request(app)
     .post(`/api/franchise/${franchise.id}/store`)
     .set("Authorization", `Bearer ${testUserAuthToken}`)
-    .send(expectedStore);
+    .send({ franchiseId: franchise.id, name });
 
   expect(res.status).toEqual(200);
-  expect(res.body).toMatchObject(expectedStore);
-});
+  expect(res.body).toMatchObject({
+    id: expect.any(Number),
+    franchiseId: franchise.id,
+    name,
+  });
+
+  return res.body;
+}
+
+test("create a new franchise store", createStore);
