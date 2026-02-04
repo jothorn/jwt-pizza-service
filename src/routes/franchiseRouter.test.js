@@ -93,3 +93,5 @@ test("delete a store", async () => {
   expect(res.status).toEqual(200);
   expect(res.body.message).toEqual("store deleted");
 });
+
+module.exports = { createFranchise, createStore };

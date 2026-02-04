@@ -1,6 +1,8 @@
 const request = require("supertest");
 const app = require("../service");
-const { randomName, createAdminUser } = require("./testingFunctions");
+const { createAdminUser } = require("./testingFunctions");
+const { createFranchise, createStore } = require("./franchiseRouter.test.js");
+const { expectValidJwt } = require("./authRouter.test.js");
 
 let testUser;
 let testUserAuthToken;
@@ -37,4 +39,24 @@ test("get the pizza menu", async () => {
 
   expect(res.status).toEqual(200);
   expect(res.body).toContainEqual({ ...item, id: expect.any(Number) });
+});
+
+test("create a order", async () => {
+  const franchise = await createFranchise();
+  const store = await createStore();
+
+  const order = {
+    franchiseId: franchise.id,
+    storeId: store.id,
+    items: [{ menuId: 1, description: "Veggie", price: 0.05 }],
+  };
+
+  const res = await request(app)
+    .post("/api/order")
+    .set("Authorization", `Bearer ${testUserAuthToken}`)
+    .send(order);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.order).toMatchObject(order);
+  expectValidJwt(res.body.jwt);
 });

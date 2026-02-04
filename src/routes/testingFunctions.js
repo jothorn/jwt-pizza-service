@@ -13,7 +13,4 @@ async function createAdminUser() {
   return { ...user, password: "toomanysecrets" };
 }
 
-module.exports = {
-  randomName,
-  createAdminUser,
-};
+module.exports = { createAdminUser };
