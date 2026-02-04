@@ -41,7 +41,7 @@ test("get the pizza menu", async () => {
   expect(res.body).toContainEqual({ ...item, id: expect.any(Number) });
 });
 
-test("create a order", async () => {
+async function createOrder() {
   const franchise = await createFranchise();
   const store = await createStore();
 
@@ -59,4 +59,30 @@ test("create a order", async () => {
   expect(res.status).toEqual(200);
   expect(res.body.order).toMatchObject(order);
   expectValidJwt(res.body.jwt);
+
+  return res.body.order;
+}
+
+test("create a order", createOrder);
+
+test("get the orders", async () => {
+  const order = await createOrder();
+  const res = await request(app)
+    .get("/api/order")
+    .set("Authorization", `Bearer ${testUserAuthToken}`);
+
+  expect(res.status).toEqual(200);
+  expect(res.body).toMatchObject({
+    dinerId: testUser.id,
+    page: 1,
+  });
+  expect(res.body.orders).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: order.id,
+        franchiseId: order.franchiseId,
+        storeId: order.storeId,
+      }),
+    ]),
+  );
 });
