@@ -60,7 +60,7 @@ test("list users", async () => {
   expect(listUsersRes.body.users.length).toBeGreaterThanOrEqual(2);
 
   // Check that each user has the required fields
-  listUsersRes.body.users.forEach(user => {
+  listUsersRes.body.users.forEach((user) => {
     expect(user).toHaveProperty("id");
     expect(user).toHaveProperty("name");
     expect(user).toHaveProperty("email");
@@ -106,7 +106,9 @@ test("list users pagination", async () => {
     .get("/api/user?page=2&limit=2")
     .set("Authorization", "Bearer " + userToken);
   expect(page2Res.status).toBe(200);
-  expect(page2Res.body.users.length).toBe(Math.min(2, Math.max(0, totalUsers - 2)));
+  expect(page2Res.body.users.length).toBe(
+    Math.min(2, Math.max(0, totalUsers - 2)),
+  );
   expect(page2Res.body.more).toBe(totalUsers > 4);
 
   // Test that pagination parameters are respected
@@ -119,7 +121,11 @@ test("list users pagination", async () => {
 });
 
 test("list users name filter", async () => {
-  const [, userToken] = await registerUser(request(app), "alice@test.com", "Alice");
+  const [, userToken] = await registerUser(
+    request(app),
+    "alice@test.com",
+    "Alice",
+  );
 
   // Create users with specific names for filtering
   await registerUser(request(app), "bob@test.com", "Bob");
@@ -133,8 +139,8 @@ test("list users name filter", async () => {
   expect(filterARes.status).toBe(200);
   expect(filterARes.body.users.length).toBeGreaterThanOrEqual(1);
   // All returned users should have names starting with 'a' (case insensitive)
-  filterARes.body.users.forEach(user => {
-    expect(user.name.toLowerCase().startsWith('a')).toBe(true);
+  filterARes.body.users.forEach((user) => {
+    expect(user.name.toLowerCase().startsWith("a")).toBe(true);
   });
 
   // Test filtering by name - should match users starting with 'b'
@@ -144,8 +150,8 @@ test("list users name filter", async () => {
   expect(filterBRes.status).toBe(200);
   expect(filterBRes.body.users.length).toBeGreaterThanOrEqual(1);
   // All returned users should have names starting with 'b' (case insensitive)
-  filterBRes.body.users.forEach(user => {
-    expect(user.name.toLowerCase().startsWith('b')).toBe(true);
+  filterBRes.body.users.forEach((user) => {
+    expect(user.name.toLowerCase().startsWith("b")).toBe(true);
   });
 
   // Test filtering with no matches
