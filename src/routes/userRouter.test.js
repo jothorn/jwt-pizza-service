@@ -46,11 +46,20 @@ test("list users unauthorized", async () => {
   expect(listUsersRes.status).toBe(401);
 });
 
-test("list users", async () => {
+test("list users forbidden for non-admin", async () => {
   const [, userToken] = await registerUser(request(app));
   const listUsersRes = await request(app)
     .get("/api/user")
     .set("Authorization", "Bearer " + userToken);
+  expect(listUsersRes.status).toBe(403);
+  expect(listUsersRes.body.message).toBe("unauthorized");
+});
+
+test("list users", async () => {
+  const adminToken = await registerAdmin(request(app));
+  const listUsersRes = await request(app)
+    .get("/api/user")
+    .set("Authorization", "Bearer " + adminToken);
   expect(listUsersRes.status).toBe(200);
 
   // Check response structure
@@ -71,7 +80,7 @@ test("list users", async () => {
 });
 
 test("list users pagination", async () => {
-  const [, userToken] = await registerUser(request(app));
+  const adminToken = await registerAdmin(request(app));
 
   // Create additional test users to test pagination
   await registerUser(request(app), "user2@test.com");
@@ -82,7 +91,7 @@ test("list users pagination", async () => {
   // Get all users to see the total count
   const allUsersRes = await request(app)
     .get("/api/user?page=1&limit=100") // Large limit to get all
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(allUsersRes.status).toBe(200);
   const totalUsers = allUsersRes.body.users.length;
   expect(totalUsers).toBeGreaterThanOrEqual(6); // At least default admin + test user + 4 additional
@@ -90,7 +99,7 @@ test("list users pagination", async () => {
   // Test default pagination (page=1, limit=10)
   const defaultPageRes = await request(app)
     .get("/api/user")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(defaultPageRes.status).toBe(200);
   expect(defaultPageRes.body.users.length).toBe(Math.min(10, totalUsers));
   expect(defaultPageRes.body.more).toBe(totalUsers > 10);
@@ -98,14 +107,14 @@ test("list users pagination", async () => {
   // Test custom pagination with limit=2
   const page1Res = await request(app)
     .get("/api/user?page=1&limit=2")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(page1Res.status).toBe(200);
   expect(page1Res.body.users.length).toBe(2);
   expect(page1Res.body.more).toBe(totalUsers > 2);
 
   const page2Res = await request(app)
     .get("/api/user?page=2&limit=2")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(page2Res.status).toBe(200);
   expect(page2Res.body.users.length).toBe(
     Math.min(2, Math.max(0, totalUsers - 2)),
@@ -115,18 +124,16 @@ test("list users pagination", async () => {
   // Test that pagination parameters are respected
   const smallLimitRes = await request(app)
     .get("/api/user?page=1&limit=1")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(smallLimitRes.status).toBe(200);
   expect(smallLimitRes.body.users.length).toBe(1);
   expect(typeof smallLimitRes.body.more).toBe("boolean");
 });
 
 test("list users name filter", async () => {
-  const [, userToken] = await registerUser(
-    request(app),
-    "alice@test.com",
-    "Alice",
-  );
+  const adminToken = await registerAdmin(request(app));
+
+  await registerUser(request(app), "alice@test.com", "Alice");
 
   // Create users with specific names for filtering
   await registerUser(request(app), "bob@test.com", "Bob");
@@ -136,7 +143,7 @@ test("list users name filter", async () => {
   // Test filtering by name - should match users starting with 'a'
   const filterARes = await request(app)
     .get("/api/user?name=a*")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(filterARes.status).toBe(200);
   expect(filterARes.body.users.length).toBeGreaterThanOrEqual(1);
   // All returned users should have names starting with 'a' (case insensitive)
@@ -147,7 +154,7 @@ test("list users name filter", async () => {
   // Test filtering by name - should match users starting with 'b'
   const filterBRes = await request(app)
     .get("/api/user?name=b*")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(filterBRes.status).toBe(200);
   expect(filterBRes.body.users.length).toBeGreaterThanOrEqual(1);
   // All returned users should have names starting with 'b' (case insensitive)
@@ -158,14 +165,14 @@ test("list users name filter", async () => {
   // Test filtering with no matches
   const filterNoMatchRes = await request(app)
     .get("/api/user?name=xyz*")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(filterNoMatchRes.status).toBe(200);
   expect(filterNoMatchRes.body.users.length).toBe(0);
 
   // Test default wildcard (should return all users)
   const wildcardRes = await request(app)
     .get("/api/user?name=*")
-    .set("Authorization", "Bearer " + userToken);
+    .set("Authorization", "Bearer " + adminToken);
   expect(wildcardRes.status).toBe(200);
   expect(wildcardRes.body.users.length).toBeGreaterThanOrEqual(4); // At least our test users
 });
@@ -216,6 +223,14 @@ async function registerUser(service, email = null, name = null) {
   registerRes.body.user.password = testUser.password;
 
   return [registerRes.body.user, registerRes.body.token];
+}
+
+async function registerAdmin(service) {
+  const adminUser = await createAdminUser();
+  const adminAuthRes = await service
+    .put("/api/auth")
+    .send({ email: adminUser.email, password: adminUser.password });
+  return adminAuthRes.body.token;
 }
 
 function randomName() {
