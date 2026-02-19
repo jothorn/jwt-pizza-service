@@ -51,6 +51,22 @@ test("list users", async () => {
     .get("/api/user")
     .set("Authorization", "Bearer " + userToken);
   expect(listUsersRes.status).toBe(200);
+
+  // Check response structure
+  expect(listUsersRes.body).toHaveProperty("users");
+  expect(Array.isArray(listUsersRes.body.users)).toBe(true);
+
+  // Should have at least the test user and default admin
+  expect(listUsersRes.body.users.length).toBeGreaterThanOrEqual(2);
+
+  // Check that each user has the required fields
+  listUsersRes.body.users.forEach(user => {
+    expect(user).toHaveProperty("id");
+    expect(user).toHaveProperty("name");
+    expect(user).toHaveProperty("email");
+    expect(user).toHaveProperty("roles");
+    expect(Array.isArray(user.roles)).toBe(true);
+  });
 });
 
 async function registerUser(service) {
