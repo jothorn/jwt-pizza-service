@@ -1,5 +1,6 @@
 const request = require("supertest");
 const app = require("../service");
+const { createAdminUser } = require("./testingFunctions");
 
 const testUser = { name: "pizza diner", email: "reg@test.com", password: "a" };
 let testUserAuthToken;
@@ -167,6 +168,27 @@ test("list users name filter", async () => {
     .set("Authorization", "Bearer " + userToken);
   expect(wildcardRes.status).toBe(200);
   expect(wildcardRes.body.users.length).toBeGreaterThanOrEqual(4); // At least our test users
+});
+
+test("delete user as admin", async () => {
+  // Create admin user
+  const adminUser = await createAdminUser();
+  const adminAuthRes = await request(app)
+    .put("/api/auth")
+    .send({ email: adminUser.email, password: adminUser.password });
+  const adminToken = adminAuthRes.body.token;
+
+  // Create a user to delete
+  const [userToDelete] = await registerUser(request(app));
+
+  // Try to delete the user as admin
+  const deleteRes = await request(app)
+    .delete(`/api/user/${userToDelete.id}`)
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send();
+
+  expect(deleteRes.status).toBe(200);
+  expect(deleteRes.body.message).toBe("not implemented");
 });
 
 async function registerUser(service, email = null, name = null) {
