@@ -69,10 +69,59 @@ test("list users", async () => {
   });
 });
 
-async function registerUser(service) {
+test("list users pagination", async () => {
+  const [, userToken] = await registerUser(request(app));
+
+  // Create additional test users to test pagination
+  await registerUser(request(app), "user2@test.com");
+  await registerUser(request(app), "user3@test.com");
+  await registerUser(request(app), "user4@test.com");
+  await registerUser(request(app), "user5@test.com");
+
+  // Get all users to see the total count
+  const allUsersRes = await request(app)
+    .get("/api/user?page=1&limit=100") // Large limit to get all
+    .set("Authorization", "Bearer " + userToken);
+  expect(allUsersRes.status).toBe(200);
+  const totalUsers = allUsersRes.body.users.length;
+  expect(totalUsers).toBeGreaterThanOrEqual(6); // At least default admin + test user + 4 additional
+
+  // Test default pagination (page=1, limit=10)
+  const defaultPageRes = await request(app)
+    .get("/api/user")
+    .set("Authorization", "Bearer " + userToken);
+  expect(defaultPageRes.status).toBe(200);
+  expect(defaultPageRes.body.users.length).toBe(Math.min(10, totalUsers));
+  expect(defaultPageRes.body.more).toBe(totalUsers > 10);
+
+  // Test custom pagination with limit=2
+  const page1Res = await request(app)
+    .get("/api/user?page=1&limit=2")
+    .set("Authorization", "Bearer " + userToken);
+  expect(page1Res.status).toBe(200);
+  expect(page1Res.body.users.length).toBe(2);
+  expect(page1Res.body.more).toBe(totalUsers > 2);
+
+  const page2Res = await request(app)
+    .get("/api/user?page=2&limit=2")
+    .set("Authorization", "Bearer " + userToken);
+  expect(page2Res.status).toBe(200);
+  expect(page2Res.body.users.length).toBe(Math.min(2, Math.max(0, totalUsers - 2)));
+  expect(page2Res.body.more).toBe(totalUsers > 4);
+
+  // Test that pagination parameters are respected
+  const smallLimitRes = await request(app)
+    .get("/api/user?page=1&limit=1")
+    .set("Authorization", "Bearer " + userToken);
+  expect(smallLimitRes.status).toBe(200);
+  expect(smallLimitRes.body.users.length).toBe(1);
+  expect(typeof smallLimitRes.body.more).toBe("boolean");
+});
+
+async function registerUser(service, email = null) {
   const testUser = {
     name: "pizza diner",
-    email: `${randomName()}@test.com`,
+    email: email || `${randomName()}@test.com`,
     password: "a",
   };
   const registerRes = await service.post("/api/auth").send(testUser);
