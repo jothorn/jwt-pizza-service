@@ -85,9 +85,9 @@ async function createStore() {
 test("create a new franchise store", createStore);
 
 test("delete a store", async () => {
-  const store = createStore();
+  const store = await createStore();
   const res = await request(app)
-    .delete(`/api/franchise/${store.franchiseId}/store/:storeId`)
+    .delete(`/api/franchise/${store.franchiseId}/store/${store.id}`)
     .set("Authorization", `Bearer ${testUserAuthToken}`);
 
   expect(res.status).toEqual(200);
