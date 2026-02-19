@@ -107,6 +107,33 @@ class DB {
     }
   }
 
+  async getUsers() {
+    const connection = await this.getConnection();
+    try {
+      const userResult = await this.query(
+        connection,
+        `SELECT id, name, email FROM user`,
+      );
+
+      const users = [];
+      for (const user of userResult) {
+        const roleResult = await this.query(
+          connection,
+          `SELECT * FROM userRole WHERE userId=?`,
+          [user.id],
+        );
+        const roles = roleResult.map((r) => {
+          return { objectId: r.objectId || undefined, role: r.role };
+        });
+        users.push({ ...user, roles: roles });
+      }
+
+      return users;
+    } finally {
+      connection.end();
+    }
+  }
+
   async updateUser(userId, name, email, password) {
     const connection = await this.getConnection();
     try {
