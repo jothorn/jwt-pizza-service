@@ -466,7 +466,7 @@ class DB {
             password: "admin",
             roles: [{ role: Role.Admin }],
           };
-          this.addUser(defaultAdmin);
+          await this.addUser(defaultAdmin);
         }
       } finally {
         connection.end();
