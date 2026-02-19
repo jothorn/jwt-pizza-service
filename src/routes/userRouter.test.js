@@ -181,14 +181,29 @@ test("delete user as admin", async () => {
   // Create a user to delete
   const [userToDelete] = await registerUser(request(app));
 
-  // Try to delete the user as admin
+  // Delete the user as admin
   const deleteRes = await request(app)
     .delete(`/api/user/${userToDelete.id}`)
     .set("Authorization", `Bearer ${adminToken}`)
     .send();
 
   expect(deleteRes.status).toBe(200);
-  expect(deleteRes.body.message).toBe("not implemented");
+  expect(deleteRes.body.message).toBe("user deleted");
+});
+
+test("delete user unauthorized", async () => {
+  // Create two regular users
+  const [, token1] = await registerUser(request(app), "user1@test.com");
+  const [user2] = await registerUser(request(app), "user2@test.com");
+
+  // Try to delete user2 as user1 (should fail)
+  const deleteRes = await request(app)
+    .delete(`/api/user/${user2.id}`)
+    .set("Authorization", `Bearer ${token1}`)
+    .send();
+
+  expect(deleteRes.status).toBe(403);
+  expect(deleteRes.body.message).toBe("unauthorized");
 });
 
 async function registerUser(service, email = null, name = null) {
