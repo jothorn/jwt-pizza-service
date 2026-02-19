@@ -118,9 +118,54 @@ test("list users pagination", async () => {
   expect(typeof smallLimitRes.body.more).toBe("boolean");
 });
 
-async function registerUser(service, email = null) {
+test("list users name filter", async () => {
+  const [, userToken] = await registerUser(request(app), "alice@test.com", "Alice");
+
+  // Create users with specific names for filtering
+  await registerUser(request(app), "bob@test.com", "Bob");
+  await registerUser(request(app), "charlie@test.com", "Charlie");
+  await registerUser(request(app), "david@test.com", "David");
+
+  // Test filtering by name - should match users starting with 'a'
+  const filterARes = await request(app)
+    .get("/api/user?name=a*")
+    .set("Authorization", "Bearer " + userToken);
+  expect(filterARes.status).toBe(200);
+  expect(filterARes.body.users.length).toBeGreaterThanOrEqual(1);
+  // All returned users should have names starting with 'a' (case insensitive)
+  filterARes.body.users.forEach(user => {
+    expect(user.name.toLowerCase().startsWith('a')).toBe(true);
+  });
+
+  // Test filtering by name - should match users starting with 'b'
+  const filterBRes = await request(app)
+    .get("/api/user?name=b*")
+    .set("Authorization", "Bearer " + userToken);
+  expect(filterBRes.status).toBe(200);
+  expect(filterBRes.body.users.length).toBeGreaterThanOrEqual(1);
+  // All returned users should have names starting with 'b' (case insensitive)
+  filterBRes.body.users.forEach(user => {
+    expect(user.name.toLowerCase().startsWith('b')).toBe(true);
+  });
+
+  // Test filtering with no matches
+  const filterNoMatchRes = await request(app)
+    .get("/api/user?name=xyz*")
+    .set("Authorization", "Bearer " + userToken);
+  expect(filterNoMatchRes.status).toBe(200);
+  expect(filterNoMatchRes.body.users.length).toBe(0);
+
+  // Test default wildcard (should return all users)
+  const wildcardRes = await request(app)
+    .get("/api/user?name=*")
+    .set("Authorization", "Bearer " + userToken);
+  expect(wildcardRes.status).toBe(200);
+  expect(wildcardRes.body.users.length).toBeGreaterThanOrEqual(4); // At least our test users
+});
+
+async function registerUser(service, email = null, name = null) {
   const testUser = {
-    name: "pizza diner",
+    name: name || "pizza diner",
     email: email || `${randomName()}@test.com`,
     password: "a",
   };
