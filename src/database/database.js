@@ -516,15 +516,7 @@ class DB {
           await connection.query(statement);
         }
 
-        if (!dbExists) {
-          const defaultAdmin = {
-            name: "常用名字",
-            email: "a@jwt.com",
-            password: "admin",
-            roles: [{ role: Role.Admin }],
-          };
-          await this.addUser(defaultAdmin);
-        }
+        await this.ensureDefaultAdmin(connection, !dbExists);
       } finally {
         connection.end();
       }
@@ -545,6 +537,49 @@ class DB {
       [config.db.connection.database],
     );
     return rows.length > 0;
+  }
+
+  async ensureDefaultAdmin(connection, wasDatabaseCreated = false) {
+    const defaultAdmin = {
+      name: "常用名字",
+      email: "a@jwt.com",
+      password: "admin",
+    };
+
+    const existingUsers = await this.query(
+      connection,
+      `SELECT id FROM user WHERE email=? LIMIT 1`,
+      [defaultAdmin.email],
+    );
+
+    let adminUserId;
+    if (existingUsers.length === 0) {
+      const hashedPassword = await bcrypt.hash(defaultAdmin.password, 10);
+      const insertUser = await this.query(
+        connection,
+        `INSERT INTO user (name, email, password) VALUES (?, ?, ?)`,
+        [defaultAdmin.name, defaultAdmin.email, hashedPassword],
+      );
+      adminUserId = insertUser.insertId;
+      if (wasDatabaseCreated) {
+        console.log("Created default admin user");
+      }
+    } else {
+      adminUserId = existingUsers[0].id;
+    }
+
+    const existingAdminRole = await this.query(
+      connection,
+      `SELECT id FROM userRole WHERE userId=? AND role=? LIMIT 1`,
+      [adminUserId, Role.Admin],
+    );
+    if (existingAdminRole.length === 0) {
+      await this.query(
+        connection,
+        `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`,
+        [adminUserId, Role.Admin, 0],
+      );
+    }
   }
 }
 
