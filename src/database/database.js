@@ -227,6 +227,19 @@ class DB {
     }
   }
 
+  async getActiveUsersCount() {
+    const connection = await this.getConnection();
+    try {
+      const rows = await this.query(
+        connection,
+        `SELECT COUNT(DISTINCT userId) AS count FROM auth`,
+      );
+      return rows[0]?.count ?? 0;
+    } finally {
+      connection.end();
+    }
+  }
+
   async getOrders(user, page = 1) {
     const connection = await this.getConnection();
     try {

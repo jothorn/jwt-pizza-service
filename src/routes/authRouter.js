@@ -125,6 +125,7 @@ authRouter.delete(
 async function setAuth(user) {
   const token = jwt.sign(user, config.jwtSecret);
   await DB.loginUser(user.id, token);
+  await updateActiveUsersMetric();
   return token;
 }
 
@@ -132,7 +133,13 @@ async function clearAuth(req) {
   const token = readAuthToken(req);
   if (token) {
     await DB.logoutUser(token);
+    await updateActiveUsersMetric();
   }
+}
+
+async function updateActiveUsersMetric() {
+  const activeUsersCount = await DB.getActiveUsersCount();
+  metrics.setActiveUsers(activeUsersCount);
 }
 
 function readAuthToken(req) {
