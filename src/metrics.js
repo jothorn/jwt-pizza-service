@@ -4,26 +4,20 @@ const os = require("os");
 const metricsConfig = config.metrics ?? {};
 const metricsEnabled = Boolean(
   metricsConfig.source &&
-    metricsConfig.endpointUrl &&
-    metricsConfig.accountId &&
-    metricsConfig.apiKey,
+  metricsConfig.endpointUrl &&
+  metricsConfig.accountId &&
+  metricsConfig.apiKey,
 );
 let hasLoggedMetricsDisabled = false;
 
 // Metrics stored in memory
 const requests = {};
-let greetingChangedCount = 0;
 
 function logMetricsDisabledOnce() {
   if (!hasLoggedMetricsDisabled) {
     console.log("Metrics disabled: missing Grafana metrics configuration");
     hasLoggedMetricsDisabled = true;
   }
-}
-
-// Function to track when the greeting is changed
-function greetingChanged() {
-  greetingChangedCount++;
 }
 
 function getCpuUsagePercentage() {
@@ -63,12 +57,15 @@ setInterval(() => {
   });
 
   metrics.push(
+    createMetric("cpu", getCpuUsagePercentage(), "%", "gauge", "asDouble", {}),
+  );
+  metrics.push(
     createMetric(
-      "greetingChange",
-      greetingChangedCount,
-      "1",
-      "sum",
-      "asInt",
+      "memory",
+      getMemoryUsagePercentage(),
+      "%",
+      "gauge",
+      "asDouble",
       {},
     ),
   );
@@ -154,7 +151,4 @@ function sendMetricToGrafana(metrics) {
 
 module.exports = {
   requestTracker,
-  greetingChanged,
-  getCpuUsagePercentage,
-  getMemoryUsagePercentage,
 };
