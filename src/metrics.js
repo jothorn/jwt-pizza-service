@@ -17,6 +17,10 @@ const authAttempts = { success: 0, failed: 0 };
 let pizzasSold = 0;
 let pizzaCreationFailures = 0;
 let pizzaRevenue = 0;
+let totalServiceLatency = 0;
+let totalServiceRequests = 0;
+let totalPizzaCreationLatency = 0;
+let totalPizzaCreationRequests = 0;
 
 function logMetricsDisabledOnce() {
   if (!hasLoggedMetricsDisabled) {
@@ -38,10 +42,18 @@ function getMemoryUsagePercentage() {
   return memoryUsage.toFixed(2);
 }
 
-// Middleware to track requests
+// Middleware to track requests and endpoint latency
 function requestTracker(req, res, next) {
   const endpoint = `[${req.method}] ${req.path}`;
   requests[endpoint] = (requests[endpoint] || 0) + 1;
+
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    totalServiceLatency += duration;
+    totalServiceRequests++;
+  });
+
   next();
 }
 
@@ -67,6 +79,11 @@ function trackPizzaPurchase(success, itemCount, revenue) {
   } else {
     pizzaCreationFailures++;
   }
+}
+
+function trackPizzaCreationLatency(durationMs) {
+  totalPizzaCreationLatency += durationMs;
+  totalPizzaCreationRequests++;
 }
 
 // This will periodically send metrics to Grafana
@@ -126,6 +143,46 @@ setInterval(() => {
   );
   metrics.push(
     createMetric("pizzaRevenue", pizzaRevenue, "1", "sum", "asDouble", {}),
+  );
+  metrics.push(
+    createMetric(
+      "serviceLatency",
+      totalServiceLatency,
+      "ms",
+      "sum",
+      "asDouble",
+      {},
+    ),
+  );
+  metrics.push(
+    createMetric(
+      "serviceRequests",
+      totalServiceRequests,
+      "1",
+      "sum",
+      "asInt",
+      {},
+    ),
+  );
+  metrics.push(
+    createMetric(
+      "pizzaCreationLatency",
+      totalPizzaCreationLatency,
+      "ms",
+      "sum",
+      "asDouble",
+      {},
+    ),
+  );
+  metrics.push(
+    createMetric(
+      "pizzaCreationRequests",
+      totalPizzaCreationRequests,
+      "1",
+      "sum",
+      "asInt",
+      {},
+    ),
   );
 
   sendMetricToGrafana(metrics);
@@ -212,4 +269,5 @@ module.exports = {
   setActiveUsers,
   trackAuthAttempt,
   trackPizzaPurchase,
+  trackPizzaCreationLatency,
 };
