@@ -12,6 +12,7 @@ let hasLoggedMetricsDisabled = false;
 
 // Metrics stored in memory
 const requests = {};
+let activeUsersCount = 0;
 
 function logMetricsDisabledOnce() {
   if (!hasLoggedMetricsDisabled) {
@@ -38,6 +39,13 @@ function requestTracker(req, res, next) {
   const endpoint = `[${req.method}] ${req.path}`;
   requests[endpoint] = (requests[endpoint] || 0) + 1;
   next();
+}
+
+function setActiveUsers(count) {
+  const parsedCount = Number(count);
+  activeUsersCount = Number.isFinite(parsedCount)
+    ? Math.max(0, Math.floor(parsedCount))
+    : 0;
 }
 
 // This will periodically send metrics to Grafana
@@ -68,6 +76,9 @@ setInterval(() => {
       "asDouble",
       {},
     ),
+  );
+  metrics.push(
+    createMetric("activeUsers", activeUsersCount, "1", "gauge", "asInt", {}),
   );
 
   sendMetricToGrafana(metrics);
@@ -151,4 +162,5 @@ function sendMetricToGrafana(metrics) {
 
 module.exports = {
   requestTracker,
+  setActiveUsers,
 };
