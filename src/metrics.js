@@ -13,6 +13,7 @@ let hasLoggedMetricsDisabled = false;
 // Metrics stored in memory
 const requests = {};
 let activeUsersCount = 0;
+const authAttempts = { success: 0, failed: 0 };
 
 function logMetricsDisabledOnce() {
   if (!hasLoggedMetricsDisabled) {
@@ -48,6 +49,14 @@ function setActiveUsers(count) {
     : 0;
 }
 
+function trackAuthAttempt(success) {
+  if (success) {
+    authAttempts.success++;
+  } else {
+    authAttempts.failed++;
+  }
+}
+
 // This will periodically send metrics to Grafana
 setInterval(() => {
   if (!metricsEnabled) {
@@ -79,6 +88,16 @@ setInterval(() => {
   );
   metrics.push(
     createMetric("activeUsers", activeUsersCount, "1", "gauge", "asInt", {}),
+  );
+  metrics.push(
+    createMetric("authAttempts", authAttempts.success, "1", "sum", "asInt", {
+      result: "success",
+    }),
+  );
+  metrics.push(
+    createMetric("authAttempts", authAttempts.failed, "1", "sum", "asInt", {
+      result: "failed",
+    }),
   );
 
   sendMetricToGrafana(metrics);
@@ -163,4 +182,5 @@ function sendMetricToGrafana(metrics) {
 module.exports = {
   requestTracker,
   setActiveUsers,
+  trackAuthAttempt,
 };
