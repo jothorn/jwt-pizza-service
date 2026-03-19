@@ -14,6 +14,9 @@ let hasLoggedMetricsDisabled = false;
 const requests = {};
 let activeUsersCount = 0;
 const authAttempts = { success: 0, failed: 0 };
+let pizzasSold = 0;
+let pizzaCreationFailures = 0;
+let pizzaRevenue = 0;
 
 function logMetricsDisabledOnce() {
   if (!hasLoggedMetricsDisabled) {
@@ -54,6 +57,15 @@ function trackAuthAttempt(success) {
     authAttempts.success++;
   } else {
     authAttempts.failed++;
+  }
+}
+
+function trackPizzaPurchase(success, itemCount, revenue) {
+  if (success) {
+    pizzasSold += itemCount;
+    pizzaRevenue += revenue;
+  } else {
+    pizzaCreationFailures++;
   }
 }
 
@@ -98,6 +110,22 @@ setInterval(() => {
     createMetric("authAttempts", authAttempts.failed, "1", "sum", "asInt", {
       result: "failed",
     }),
+  );
+  metrics.push(
+    createMetric("pizzasSold", pizzasSold, "1", "sum", "asInt", {}),
+  );
+  metrics.push(
+    createMetric(
+      "pizzaCreationFailures",
+      pizzaCreationFailures,
+      "1",
+      "sum",
+      "asInt",
+      {},
+    ),
+  );
+  metrics.push(
+    createMetric("pizzaRevenue", pizzaRevenue, "1", "sum", "asDouble", {}),
   );
 
   sendMetricToGrafana(metrics);
@@ -183,4 +211,5 @@ module.exports = {
   requestTracker,
   setActiveUsers,
   trackAuthAttempt,
+  trackPizzaPurchase,
 };
