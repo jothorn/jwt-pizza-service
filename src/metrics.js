@@ -11,7 +11,10 @@ const metricsEnabled = Boolean(
 let hasLoggedMetricsDisabled = false;
 
 // Metrics stored in memory
-const requests = {};
+const requestCounts = {
+  total: 0,
+  byMethod: {},
+};
 let activeUsersCount = 0;
 const authAttempts = { success: 0, failed: 0 };
 let pizzasSold = 0;
@@ -44,8 +47,9 @@ function getMemoryUsagePercentage() {
 
 // Middleware to track requests and endpoint latency
 function requestTracker(req, res, next) {
-  const endpoint = `[${req.method}] ${req.path}`;
-  requests[endpoint] = (requests[endpoint] || 0) + 1;
+  const method = req.method?.toUpperCase() || "UNKNOWN";
+  requestCounts.total++;
+  requestCounts.byMethod[method] = (requestCounts.byMethod[method] || 0) + 1;
 
   const start = Date.now();
   res.on("finish", () => {
@@ -94,11 +98,19 @@ setInterval(() => {
   }
 
   const metrics = [];
-  Object.keys(requests).forEach((endpoint) => {
+  metrics.push(
+    createMetric("requests", requestCounts.total, "1", "sum", "asInt", {}),
+  );
+  Object.keys(requestCounts.byMethod).forEach((method) => {
     metrics.push(
-      createMetric("requests", requests[endpoint], "1", "sum", "asInt", {
-        endpoint,
-      }),
+      createMetric(
+        "requests",
+        requestCounts.byMethod[method],
+        "1",
+        "sum",
+        "asInt",
+        { method },
+      ),
     );
   });
 
@@ -128,9 +140,7 @@ setInterval(() => {
       result: "failed",
     }),
   );
-  metrics.push(
-    createMetric("pizzasSold", pizzasSold, "1", "sum", "asInt", {}),
-  );
+  metrics.push(createMetric("pizzasSold", pizzasSold, "1", "sum", "asInt", {}));
   metrics.push(
     createMetric(
       "pizzaCreationFailures",
