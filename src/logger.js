@@ -24,6 +24,15 @@ class Logger {
     this.log("info", "database", { sql, params });
   };
 
+  factoryLogger = (reqBody, resBody, statusCode) => {
+    const level = this.statusToLogLevel(statusCode);
+    this.log(level, "factory", {
+      statusCode,
+      reqBody,
+      resBody,
+    });
+  };
+
   log(level, type, logData) {
     const labels = {
       component: config.logging.source,
@@ -47,11 +56,41 @@ class Logger {
   }
 
   sanitize(logData) {
-    logData = JSON.stringify(logData);
-    return logData.replace(
-      /\\"password\\":\s*\\"[^"]*\\"/g,
-      '\\"password\\": \\"*****\\"',
-    );
+    const secretKeyMatcher =
+      /(password|token|jwt|api[-_]?key|authorization|secret)/i;
+
+    const redact = (value, key = "") => {
+      if (value === null || value === undefined) {
+        return value;
+      }
+
+      if (typeof value === "string") {
+        if (secretKeyMatcher.test(key) || value.startsWith("Bearer ")) {
+          return "*****";
+        }
+        return value;
+      }
+
+      if (typeof value !== "object") {
+        return value;
+      }
+
+      if (Array.isArray(value)) {
+        return value.map((item) => redact(item));
+      }
+
+      const sanitized = {};
+      for (const [nestedKey, nestedValue] of Object.entries(value)) {
+        if (secretKeyMatcher.test(nestedKey)) {
+          sanitized[nestedKey] = "*****";
+        } else {
+          sanitized[nestedKey] = redact(nestedValue, nestedKey);
+        }
+      }
+      return sanitized;
+    };
+
+    return JSON.stringify(redact(logData));
   }
 
   sendLogToGrafana(event) {
