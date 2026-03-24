@@ -41,11 +41,19 @@
       "Type": "AWS::ECS::Service",
       "Properties": {
         "Cluster": { "Ref": "ECSCluster" },
-        "CapacityProviderStrategy": [{ "CapacityProvider": "FARGATE", "Base": 0, "Weight": 1 }],
+        "CapacityProviderStrategy": [
+          { "CapacityProvider": "FARGATE", "Base": 0, "Weight": 1 }
+        ],
         "TaskDefinition": {
           "Fn::Join": [
             ":",
-            ["arn:aws:ecs", { "Ref": "AWS::Region" }, { "Ref": "AWS::AccountId" }, "task-definition/jwt-pizza-service", { "Ref": "TaskVersion" }]
+            [
+              "arn:aws:ecs",
+              { "Ref": "AWS::Region" },
+              { "Ref": "AWS::AccountId" },
+              "task-definition/jwt-pizza-service",
+              { "Ref": "TaskVersion" }
+            ]
           ]
         },
         "ServiceName": "jwt-pizza-service",

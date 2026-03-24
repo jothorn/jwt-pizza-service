@@ -173,9 +173,13 @@ class DB {
       await connection.beginTransaction();
       try {
         // Delete user roles
-        await this.query(connection, `DELETE FROM userRole WHERE userId=?`, [userId]);
+        await this.query(connection, `DELETE FROM userRole WHERE userId=?`, [
+          userId,
+        ]);
         // Delete auth tokens
-        await this.query(connection, `DELETE FROM auth WHERE userId=?`, [userId]);
+        await this.query(connection, `DELETE FROM auth WHERE userId=?`, [
+          userId,
+        ]);
         // Delete user
         await this.query(connection, `DELETE FROM user WHERE id=?`, [userId]);
         await connection.commit();
