@@ -33,6 +33,15 @@ class Logger {
     });
   };
 
+  exceptionLogger = (error, context = {}) => {
+    this.log("error", "exception", {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      ...context,
+    });
+  };
+
   log(level, type, logData) {
     const labels = {
       component: config.logging.source,
