@@ -1,4 +1,6 @@
 {
+  "testPathIgnorePatterns": ["/node_modules/", "<rootDir>/dist/"],
+  "modulePathIgnorePatterns": ["<rootDir>/dist/"],
   "collectCoverage": true,
   "coverageReporters": ["json-summary", "text"],
   "coverageThreshold": {
