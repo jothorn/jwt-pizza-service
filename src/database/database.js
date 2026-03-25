@@ -480,7 +480,10 @@ class DB {
   async query(connection, sql, params) {
     const bound = params ?? [];
     logger.databaseLogger(sql, bound);
-    const [results] = await connection.execute(sql, bound);
+    const [results] =
+      bound.length > 0
+        ? await connection.execute(sql, bound)
+        : await connection.query(sql);
     return results;
   }
 
@@ -511,11 +514,7 @@ class DB {
       decimalNumbers: true,
     });
     if (setUse) {
-      await this.query(
-        connection,
-        `USE ${config.db.connection.database}`,
-        [],
-      );
+      await this.query(connection, `USE ${config.db.connection.database}`, []);
     }
     return connection;
   }
