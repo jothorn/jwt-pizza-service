@@ -21,7 +21,10 @@ class Logger {
   };
 
   databaseLogger = (sql, params) => {
-    this.log("info", "database", { sql, params });
+    this.log("info", "database", {
+      sql,
+      params: this.redactDatabaseParams(sql, params),
+    });
   };
 
   factoryLogger = (reqBody, resBody, statusCode) => {
@@ -41,6 +44,20 @@ class Logger {
       ...context,
     });
   };
+
+  redactDatabaseParams(sql, params) {
+    if (!Array.isArray(params)) {
+      return params;
+    }
+
+    const sensitiveSqlMatcher =
+      /\b(token|password|secret|api[-_]?key|authorization|jwt)\b/i;
+    if (!sensitiveSqlMatcher.test(String(sql))) {
+      return params;
+    }
+
+    return params.map(() => "*****");
+  }
 
   log(level, type, logData) {
     const labels = {
