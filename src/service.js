@@ -60,7 +60,7 @@ app.use((err, req, res) => {
     path: req.originalUrl,
     method: req.method,
     authorized: !!req.headers.authorization,
-    reqBody: req.body,
+    reqBody: JSON.stringify(req.body ?? {}),
   });
   res
     .status(err.statusCode ?? 500)

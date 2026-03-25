@@ -9,8 +9,8 @@ class Logger {
         path: req.originalUrl,
         method: req.method,
         statusCode: res.statusCode,
-        reqBody: JSON.stringify(req.body),
-        resBody: JSON.stringify(resBody),
+        reqBody: this.toLogString(req.body),
+        resBody: this.toLogString(resBody),
       };
       const level = this.statusToLogLevel(res.statusCode);
       this.log(level, "http", logData);
@@ -21,9 +21,10 @@ class Logger {
   };
 
   databaseLogger = (sql, params) => {
+    const redactedParams = this.redactDatabaseParams(sql, params);
     this.log("info", "database", {
       sql,
-      params: this.redactDatabaseParams(sql, params),
+      params: this.toLogString(redactedParams ?? []),
     });
   };
 
@@ -31,8 +32,8 @@ class Logger {
     const level = this.statusToLogLevel(statusCode);
     this.log(level, "factory", {
       statusCode,
-      reqBody: JSON.stringify(reqBody),
-      resBody: JSON.stringify(resBody),
+      reqBody: this.toLogString(reqBody),
+      resBody: this.toLogString(resBody),
     });
   };
 
@@ -57,6 +58,20 @@ class Logger {
     }
 
     return params.map(() => "*****");
+  }
+
+  toLogString(value) {
+    if (value === undefined) {
+      return "";
+    }
+    if (typeof value === "string") {
+      return value;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
   }
 
   log(level, type, logData) {
@@ -105,7 +120,7 @@ class Logger {
       return value
         .replace(
           /("(?:password|token|jwt|api[-_]?key|authorization|secret)"\s*:\s*")[^"]*(")/gi,
-          '$1*****$2',
+          "$1*****$2",
         )
         .replace(/(Bearer\s+)[^\s"]+/gi, "$1*****");
     };
