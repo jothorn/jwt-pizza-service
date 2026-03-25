@@ -1,6 +1,15 @@
 const config = require("./config");
 
 class Logger {
+  loggingEnabled =
+    process.env.NODE_ENV !== "test" &&
+    Boolean(
+      config.logging?.source &&
+        config.logging?.endpointUrl &&
+        config.logging?.accountId &&
+        config.logging?.apiKey,
+    );
+
   httpLogger = (req, res, next) => {
     let send = res.send;
     res.send = (resBody) => {
@@ -142,6 +151,10 @@ class Logger {
   }
 
   sendLogToGrafana(event) {
+    if (!this.loggingEnabled) {
+      return;
+    }
+
     const body = JSON.stringify(event);
     fetch(`${config.logging.endpointUrl}`, {
       method: "post",
@@ -150,9 +163,15 @@ class Logger {
         "Content-Type": "application/json",
         Authorization: `Bearer ${config.logging.accountId}:${config.logging.apiKey}`,
       },
-    }).then((res) => {
-      if (!res.ok) console.log("Failed to send log to Grafana");
-    });
+    })
+      .then((res) => {
+        if (!res.ok) {
+          console.log("Failed to send log to Grafana");
+        }
+      })
+      .catch((error) => {
+        console.log("Error sending log to Grafana:", error?.message || error);
+      });
   }
 }
 module.exports = new Logger();
