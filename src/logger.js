@@ -31,8 +31,8 @@ class Logger {
     const level = this.statusToLogLevel(statusCode);
     this.log(level, "factory", {
       statusCode,
-      reqBody,
-      resBody,
+      reqBody: JSON.stringify(reqBody),
+      resBody: JSON.stringify(resBody),
     });
   };
 
