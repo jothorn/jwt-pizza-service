@@ -5,11 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     name: Build
@@ -35,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -106,7 +100,6 @@ jobs:
         with:
           name: package
           path: dist/
-          compression-level: 0
 
   deploy:
     runs-on: ubuntu-latest
@@ -139,15 +132,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push container image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/jwt-pizza-service:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: "jwt-pizza-service"
+        run: |
+          docker build --platform=linux/arm64 -t $ECR_REGISTRY/$ECR_REPOSITORY --push .
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >>  $GITHUB_OUTPUT
 
       - name: Deploy new container
         run: |
