@@ -20,12 +20,8 @@ class Logger {
     next();
   };
 
-  databaseLogger = (sql, params) => {
-    const redactedParams = this.redactDatabaseParams(sql, params);
-    this.log("info", "database", {
-      sql,
-      params: this.toLogString(redactedParams ?? []),
-    });
+  databaseLogger = (sql) => {
+    this.log("info", "database", { sql });
   };
 
   factoryLogger = (reqBody, resBody, statusCode) => {
@@ -45,20 +41,6 @@ class Logger {
       ...context,
     });
   };
-
-  redactDatabaseParams(sql, params) {
-    if (!Array.isArray(params)) {
-      return params;
-    }
-
-    const sensitiveSqlMatcher =
-      /\b(token|password|secret|api[-_]?key|authorization|jwt)\b/i;
-    if (!sensitiveSqlMatcher.test(String(sql))) {
-      return params;
-    }
-
-    return params.map(() => "*****");
-  }
 
   toLogString(value) {
     if (value === undefined) {

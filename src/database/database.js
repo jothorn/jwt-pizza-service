@@ -479,7 +479,7 @@ class DB {
 
   async query(connection, sql, params) {
     const bound = params ?? [];
-    logger.databaseLogger(sql, bound);
+    logger.databaseLogger(sql);
     const [results] =
       bound.length > 0
         ? await connection.execute(sql, bound)
