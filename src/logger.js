@@ -84,6 +84,31 @@ class Logger {
   sanitize(logData) {
     const secretKeyMatcher =
       /(password|token|jwt|api[-_]?key|authorization|secret)/i;
+    const redactStringValue = (value) => {
+      if (value.startsWith("Bearer ")) {
+        return "*****";
+      }
+
+      const trimmed = value.trim();
+      if (
+        (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+        (trimmed.startsWith("[") && trimmed.endsWith("]"))
+      ) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return JSON.stringify(redact(parsed));
+        } catch {
+          // Fall through to regex-based sanitization for non-JSON strings.
+        }
+      }
+
+      return value
+        .replace(
+          /("(?:password|token|jwt|api[-_]?key|authorization|secret)"\s*:\s*")[^"]*(")/gi,
+          '$1*****$2',
+        )
+        .replace(/(Bearer\s+)[^\s"]+/gi, "$1*****");
+    };
 
     const redact = (value, key = "") => {
       if (value === null || value === undefined) {
@@ -91,10 +116,10 @@ class Logger {
       }
 
       if (typeof value === "string") {
-        if (secretKeyMatcher.test(key) || value.startsWith("Bearer ")) {
+        if (secretKeyMatcher.test(key)) {
           return "*****";
         }
-        return value;
+        return redactStringValue(value);
       }
 
       if (typeof value !== "object") {
