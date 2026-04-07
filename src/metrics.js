@@ -17,9 +17,7 @@ const requestCounts = {
 };
 let activeUsersCount = 0;
 const authAttempts = { success: 0, failed: 0 };
-let orderCreationSuccess = 0;
-let orderCreationFailedChaos = 0;
-let orderCreationFailedFactory = 0;
+const orderCreation = { success: 0, failed: 0 };
 let pizzasSold = 0;
 let pizzaCreationFailures = 0;
 let pizzaRevenue = 0;
@@ -79,13 +77,11 @@ function trackAuthAttempt(success) {
   }
 }
 
-function trackOrderCreation(outcome) {
-  if (outcome === "success") {
-    orderCreationSuccess++;
-  } else if (outcome === "chaos") {
-    orderCreationFailedChaos++;
-  } else if (outcome === "factory") {
-    orderCreationFailedFactory++;
+function trackOrderCreation(success) {
+  if (success) {
+    orderCreation.success++;
+  } else {
+    orderCreation.failed++;
   }
 }
 
@@ -154,29 +150,14 @@ setInterval(() => {
     }),
   );
   metrics.push(
-    createMetric("orderCreation", orderCreationSuccess, "1", "sum", "asInt", {
+    createMetric("orderCreation", orderCreation.success, "1", "sum", "asInt", {
       result: "success",
     }),
   );
   metrics.push(
-    createMetric(
-      "orderCreation",
-      orderCreationFailedChaos,
-      "1",
-      "sum",
-      "asInt",
-      { result: "failed", reason: "chaos" },
-    ),
-  );
-  metrics.push(
-    createMetric(
-      "orderCreation",
-      orderCreationFailedFactory,
-      "1",
-      "sum",
-      "asInt",
-      { result: "failed", reason: "factory" },
-    ),
+    createMetric("orderCreation", orderCreation.failed, "1", "sum", "asInt", {
+      result: "failed",
+    }),
   );
   metrics.push(createMetric("pizzasSold", pizzasSold, "1", "sum", "asInt", {}));
   metrics.push(
