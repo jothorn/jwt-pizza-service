@@ -139,6 +139,7 @@ orderRouter.post(
   authRouter.authenticateToken,
   (req, res, next) => {
     if (enableChaos && Math.random() < 0.5) {
+      metrics.trackOrderCreation("chaos");
       throw new StatusCodeError("Chaos monkey", 500);
     }
     next();
@@ -166,9 +167,11 @@ orderRouter.post(
     metrics.trackPizzaCreationLatency(factoryLatency);
     if (factoryRes.ok) {
       const revenue = order.items.reduce((sum, item) => sum + item.price, 0);
+      metrics.trackOrderCreation("success");
       metrics.trackPizzaPurchase(true, order.items.length, revenue);
       res.send({ order, followLinkToEndChaos: j.reportUrl, jwt: j.jwt });
     } else {
+      metrics.trackOrderCreation("factory");
       metrics.trackPizzaPurchase(false, 0, 0);
       res.status(500).send({
         message: "Failed to fulfill order at factory",
